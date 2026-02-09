@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI & SOP Strategic Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;--bg4:#222222;
+  --gold:#c8a84e;--gold-light:#e8d48b;--gold-dark:#8a6d2b;--gold-glow:rgba(200,168,78,.15);
+  --text:#e8e4dc;--text-muted:#888580;--text-dim:#555350;
+  --red:#c44040;--green:#4caf6a;--blue:#4a7fc4;--purple:#8a5cc4;
+  --radius:12px;--transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;line-height:1.6;
+}
+/* Watermark */
+body::after{
+  content:'M Rafli Febriansyah';position:fixed;bottom:20px;right:30px;
+  font-family:'Playfair Display',serif;font-size:13px;color:rgba(200,168,78,.12);
+  letter-spacing:2px;z-index:0;pointer-events:none;
+  text-transform:uppercase;
+}
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold-dark);border-radius:3px}
+
+/* ===== HEADER ===== */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,10,10,.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(200,168,78,.15);
+  padding:0 40px;
+}
+.header-inner{
+  max-width:1440px;margin:0 auto;display:flex;align-items:center;
+  justify-content:space-between;height:64px;
+}
+.logo{
+  font-family:'Playfair Display',serif;font-size:18px;font-weight:700;
+  color:var(--gold);letter-spacing:1px;
+}
+.logo span{color:var(--text-muted);font-weight:400;font-size:13px;margin-left:8px;font-family:'DM Sans',sans-serif}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--bg3);border-radius:8px;padding:3px}
+.tab{
+  padding:8px 20px;border-radius:6px;font-size:13px;font-weight:500;
+  cursor:pointer;color:var(--text-muted);border:none;background:transparent;
+  transition:var(--transition);letter-spacing:.3px;
+}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--gold);color:#0a0a0a;font-weight:600}
+
+/* ===== MAIN ===== */
+.main{max-width:1440px;margin:0 auto;padding:30px 40px 80px}
+
+/* Section titles */
+.section-title{
+  font-family:'Playfair Display',serif;font-size:26px;font-weight:600;
+  color:var(--gold-light);margin-bottom:6px;
+  display:flex;align-items:center;gap:12px;
+}
+.section-title::before{content:'';width:4px;height:28px;background:var(--gold);border-radius:2px;display:inline-block}
+.section-sub{color:var(--text-muted);font-size:13px;margin-bottom:28px;padding-left:16px}
+
+/* Panels */
+.panel-section{display:none}
+.panel-section.active{display:block;animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Cards */
+.card{
+  background:var(--bg2);border:1px solid rgba(200,168,78,.08);
+  border-radius:var(--radius);padding:24px;position:relative;overflow:hidden;
+  transition:var(--transition);
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-dark),transparent);opacity:.4;
+}
+.card:hover{border-color:rgba(200,168,78,.2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+
+/* Grid layouts */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:30px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:30px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:30px}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:30px}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-bottom:30px}
+
+/* KPI stat cards */
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px}
+.stat-value{
+  font-family:'Playfair Display',serif;font-size:32px;font-weight:700;
+  color:var(--gold-light);line-height:1.1;margin-bottom:4px;
+}
+.stat-change{font-size:12px;display:flex;align-items:center;gap:4px}
+.stat-change.up{color:var(--green)}
+.stat-change.down{color:var(--red)}
+.stat-icon{
+  width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:20px;position:absolute;top:20px;right:20px;
+  background:var(--gold-glow);color:var(--gold);
+}
+
+/* Chart containers */
+.chart-wrap{position:relative;width:100%;max-height:280px}
+.chart-wrap canvas{width:100%!important;max-height:280px}
+
+/* Tables */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  text-align:left;padding:12px 16px;font-size:11px;text-transform:uppercase;
+  letter-spacing:1px;color:var(--gold);border-bottom:1px solid rgba(200,168,78,.15);
+  font-weight:600;white-space:nowrap;
+}
+tbody td{
+  padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);
+  color:var(--text);vertical-align:middle;
+}
+tbody tr{transition:var(--transition)}
+tbody tr:hover{background:rgba(200,168,78,.04)}
+
+/* Badges */
+.badge{
+  display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;
+  font-weight:600;letter-spacing:.5px;
+}
+.badge-lead{background:rgba(74,127,196,.15);color:var(--blue)}
+.badge-lag{background:rgba(138,92,196,.15);color:var(--purple)}
+.badge-max{background:rgba(76,175,106,.15);color:var(--green)}
+.badge-min{background:rgba(196,64,64,.15);color:var(--red)}
+
+/* Flow / Process */
+.flow{display:flex;align-items:stretch;gap:0;margin-bottom:30px}
+.flow-step{
+  flex:1;padding:20px;text-align:center;position:relative;
+  background:var(--bg2);border:1px solid rgba(200,168,78,.08);
+}
+.flow-step:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+.flow-step:last-child{border-radius:0 var(--radius) var(--radius) 0}
+.flow-num{
+  width:32px;height:32px;border-radius:50%;background:var(--gold);color:#0a0a0a;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;margin-bottom:10px;
+}
+.flow-title{font-weight:600;font-size:14px;margin-bottom:4px;color:var(--gold-light)}
+.flow-desc{font-size:12px;color:var(--text-muted);line-height:1.4}
+.flow-arrow{
+  display:flex;align-items:center;color:var(--gold-dark);font-size:20px;
+  padding:0 4px;background:var(--bg);
+}
+
+/* BSC Perspective cards */
+.bsc-card{padding:20px;border-left:3px solid;position:relative}
+.bsc-financial{border-left-color:var(--gold)}
+.bsc-customer{border-left-color:var(--blue)}
+.bsc-internal{border-left-color:var(--green)}
+.bsc-learning{border-left-color:var(--purple)}
+.bsc-tag{
+  font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;
+  margin-bottom:8px;
+}
+.bsc-financial .bsc-tag{color:var(--gold)}
+.bsc-customer .bsc-tag{color:var(--blue)}
+.bsc-internal .bsc-tag{color:var(--green)}
+.bsc-learning .bsc-tag{color:var(--purple)}
+
+/* Values grid */
+.value-card{text-align:center;padding:28px 20px}
+.value-num{
+  font-family:'Playfair Display',serif;font-size:42px;font-weight:700;
+  color:var(--gold);opacity:.3;margin-bottom:8px;line-height:1;
+}
+.value-name{font-weight:600;font-size:16px;margin-bottom:6px;color:var(--gold-light)}
+.value-desc{font-size:12px;color:var(--text-muted);line-height:1.5}
+
+/* SOP format cards */
+.sop-format{padding:24px;text-align:center}
+.sop-format h4{color:var(--gold-light);font-size:16px;margin-bottom:12px;font-weight:600}
+.sop-format .use-case{
+  font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);
+  margin-bottom:8px;font-weight:600;
+}
+.sop-format ul{list-style:none;text-align:left;padding:0}
+.sop-format li{
+  font-size:13px;color:var(--text-muted);padding:4px 0;padding-left:16px;
+  position:relative;
+}
+.sop-format li::before{content:'›';position:absolute;left:0;color:var(--gold)}
+
+/* Criteria list */
+.criteria-item{
+  display:flex;gap:16px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04);
+  align-items:flex-start;
+}
+.criteria-num{
+  width:28px;height:28px;border-radius:50%;background:var(--gold-glow);
+  color:var(--gold);display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.criteria-text h5{font-size:14px;color:var(--gold-light);margin-bottom:2px;font-weight:600}
+.criteria-text p{font-size:12px;color:var(--text-muted)}
+
+/* Schedule */
+.schedule-row{
+  display:flex;align-items:center;gap:16px;padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.schedule-time{
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);
+  min-width:110px;
+}
+.schedule-dur{
+  font-size:12px;color:var(--text-dim);min-width:40px;text-align:center;
+}
+.schedule-topic{font-size:14px;font-weight:500}
+.schedule-bar{
+  flex:1;height:4px;border-radius:2px;background:var(--bg3);position:relative;overflow:hidden;
+}
+.schedule-bar span{
+  position:absolute;height:100%;border-radius:2px;background:var(--gold);left:0;
+}
+
+/* Responsive */
+@media(max-width:1024px){
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:1fr}
+  .grid-2-1,.grid-1-2{grid-template-columns:1fr}
+  .flow{flex-direction:column}
+  .flow-step{border-radius:var(--radius)!important}
+  .flow-arrow{transform:rotate(90deg);justify-content:center;padding:8px}
+}
+@media(max-width:768px){
+  .main{padding:20px 16px 60px}
+  .header{padding:0 16px}
+  .grid-4,.grid-2{grid-template-columns:1fr}
+  .tabs{overflow-x:auto;flex-wrap:nowrap}
+  .tab{white-space:nowrap;font-size:12px;padding:6px 14px}
+  .stat-value{font-size:26px}
+  .section-title{font-size:20px}
+}
+
+/* Tooltip */
+.tip{position:relative;cursor:help}
+.tip::after{
+  content:attr(data-tip);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);
+  background:var(--bg4);color:var(--text);padding:6px 12px;border-radius:6px;
+  font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;
+  transition:opacity .2s;border:1px solid rgba(200,168,78,.15);z-index:10;
+}
+.tip:hover::after{opacity:1}
+
+/* Divider */
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(200,168,78,.12),transparent);margin:40px 0}
+
+/* Pulse dot */
+.pulse{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.pulse-green{background:var(--green);box-shadow:0 0 0 0 rgba(76,175,106,.4);animation:pulsate 2s infinite}
+.pulse-red{background:var(--red);box-shadow:0 0 0 0 rgba(196,64,64,.4);animation:pulsate 2s infinite}
+.pulse-gold{background:var(--gold);box-shadow:0 0 0 0 rgba(200,168,78,.4);animation:pulsate 2s infinite}
+@keyframes pulsate{0%{box-shadow:0 0 0 0 rgba(200,168,78,.4)}70%{box-shadow:0 0 0 8px rgba(200,168,78,0)}100%{box-shadow:0 0 0 0 rgba(200,168,78,0)}}
+
+.mono{font-family:'JetBrains Mono',monospace}
+.gold{color:var(--gold)}
+.text-sm{font-size:13px}
+.text-xs{font-size:11px}
+.text-muted{color:var(--text-muted)}
+.mb-8{margin-bottom:8px}
+.mb-16{margin-bottom:16px}
+.mb-24{margin-bottom:24px}
+.fw-600{font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">KPI & SOP<span>Strategic Dashboard</span></div>
+    <div class="tabs" id="mainTabs">
+      <button class="tab active" data-panel="overview">Overview</button>
+      <button class="tab" data-panel="bsc">BSC & Strategy</button>
+      <button class="tab" data-panel="kpi">KPI Framework</button>
+      <button class="tab" data-panel="sop">SOP</button>
+      <button class="tab" data-panel="examples">Industry Maps</button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ========== OVERVIEW ========== -->
+<div class="panel-section active" id="panel-overview">
+  <div class="section-title">Executive Overview</div>
+  <p class="section-sub">TRrecPro Essential Series — Menyusun KPI dan SOP Perusahaan</p>
+
+  <!-- Training Info -->
+  <div class="grid-4">
+    <div class="card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-label">Training Focus</div>
+      <div class="stat-value" style="font-size:22px">KPI & SOP</div>
+      <div class="text-xs text-muted">Balanced Scorecard Approach</div>
+    </div>
+    <div class="card">
+      <div class="stat-icon">⏱</div>
+      <div class="stat-label">Total Duration</div>
+      <div class="stat-value">7<span style="font-size:16px;color:var(--text-muted)"> hrs</span></div>
+      <div class="text-xs text-muted">4 Sessions + Workshops</div>
+    </div>
+    <div class="card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-label">BSC Perspectives</div>
+      <div class="stat-value">4</div>
+      <div class="text-xs text-muted">Financial, Customer, Internal, L&G</div>
+    </div>
+    <div class="card">
+      <div class="stat-icon">📋</div>
+      <div class="stat-label">Core Frameworks</div>
+      <div class="stat-value" style="font-size:22px">BMC → KPI</div>
+      <div class="text-xs text-muted">Strategy Map → SOP</div>
+    </div>
+  </div>
+
+  <!-- Strategic Flow -->
+  <div class="mb-24" style="margin-top:10px">
+    <h3 style="font-size:15px;color:var(--gold);margin-bottom:16px;font-weight:600;letter-spacing:.5px">STRATEGIC ORGANIZATION FLOW</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">01</div>
+        <div class="flow-title">BMC</div>
+        <div class="flow-desc">Helicopter View of Your Business — Identify key elements & contributing activities</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-num">02</div>
+        <div class="flow-title">Strategy Map</div>
+        <div class="flow-desc">Road to your big goal (vision) using 4 BSC perspectives</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-num">03</div>
+        <div class="flow-title">KPI</div>
+        <div class="flow-desc">Know if you are alive — Define metrics, benchmarks & monitor</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-num">04</div>
+        <div class="flow-title">SOP</div>
+        <div class="flow-desc">Detailed steps to ensure KPIs are achieved — Document & control</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barrier Stats & Schedule -->
+  <div class="grid-2">
+    <div class="card">
+      <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">BARRIERS TO STRATEGY EXECUTION</h3>
+      <div class="chart-wrap"><canvas id="barrierChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">TRAINING SCHEDULE</h3>
+      <div class="schedule-row">
+        <div class="schedule-time">09:00–10:30</div>
+        <div class="schedule-dur">90'</div>
+        <div class="schedule-topic">Session 1</div>
+        <div class="schedule-bar"><span style="width:24%"></span></div>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-time">10:30–10:45</div>
+        <div class="schedule-dur">15'</div>
+        <div class="schedule-topic" style="color:var(--text-muted)">Coffee Break</div>
+        <div class="schedule-bar"><span style="width:4%;background:var(--text-dim)"></span></div>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-time">10:45–12:00</div>
+        <div class="schedule-dur">75'</div>
+        <div class="schedule-topic">Session 2</div>
+        <div class="schedule-bar"><span style="width:20%"></span></div>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-time">12:00–13:00</div>
+        <div class="schedule-dur">60'</div>
+        <div class="schedule-topic" style="color:var(--text-muted)">Lunch Break</div>
+        <div class="schedule-bar"><span style="width:16%;background:var(--text-dim)"></span></div>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-time">13:00–15:30</div>
+        <div class="schedule-dur">150'</div>
+        <div class="schedule-topic">Session 3</div>
+        <div class="schedule-bar"><span style="width:40%"></span></div>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-time">15:30–16:00</div>
+        <div class="schedule-dur">30'</div>
+        <div class="schedule-topic" style="color:var(--text-muted)">Coffee Break</div>
+        <div class="schedule-bar"><span style="width:8%;background:var(--text-dim)"></span></div>
+      </div>
+      <div class="schedule-row">
+        <div class="schedule-time">16:00–17:00</div>
+        <div class="schedule-dur">60'</div>
+        <div class="schedule-topic">Session 4</div>
+        <div class="schedule-bar"><span style="width:16%"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vision / Mission / Values -->
+  <div class="divider"></div>
+  <div class="section-title">Vision, Mission & Core Values</div>
+  <p class="section-sub">Foundation of Strategic Organization</p>
+
+  <div class="grid-3" style="margin-bottom:16px">
+    <div class="card" style="border-top:2px solid var(--gold)">
+      <div class="stat-label">Vision</div>
+      <p class="text-sm" style="line-height:1.6">A statement of an organization's overarching aspirations of what it hopes to achieve or to become.</p>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05)">
+        <div class="text-xs text-muted mb-8" style="font-weight:600">GUIDELINES:</div>
+        <div class="text-xs text-muted">Ambitious, Feasible, Strategic, Noble Cause, No Jargon</div>
+      </div>
+    </div>
+    <div class="card" style="border-top:2px solid var(--blue)">
+      <div class="stat-label">Mission</div>
+      <p class="text-sm" style="line-height:1.6">What the organization needs to do now to achieve the vision.</p>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05)">
+        <div class="text-xs text-muted mb-8" style="font-weight:600">GUIDELINES:</div>
+        <div class="text-xs text-muted">Core strengths, Product roadmap, Differentiation from competitors, EVP, Answer 5W</div>
+      </div>
+    </div>
+    <div class="card" style="border-top:2px solid var(--purple)">
+      <div class="stat-label">Core Values</div>
+      <p class="text-sm" style="line-height:1.6">What the organization believes in and how people are expected to behave.</p>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05)">
+        <div class="text-xs text-muted mb-8" style="font-weight:600">GUIDELINES:</div>
+        <div class="text-xs text-muted">4 BSC perspectives → 7 aspects each → Prioritize top 3–7 → Brand them</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRrecPro Values -->
+  <div class="grid-4" style="grid-template-columns:repeat(5,1fr)">
+    <div class="card value-card"><div class="value-num">1</div><div class="value-name">Morality</div><div class="value-desc">Highest standards of ethical behavior</div></div>
+    <div class="card value-card"><div class="value-num">2</div><div class="value-name">Unity</div><div class="value-desc">Teamwork & collaboration with clients</div></div>
+    <div class="card value-card"><div class="value-num">3</div><div class="value-name">Loyalty</div><div class="value-desc">Long-term relationships with partners</div></div>
+    <div class="card value-card"><div class="value-num">4</div><div class="value-name">Teamwork</div><div class="value-desc">Achieving mutual goals together</div></div>
+    <div class="card value-card"><div class="value-num">5</div><div class="value-name">Integrity</div><div class="value-desc">Reputable & accountable activities</div></div>
+  </div>
+</div>
+
+<!-- ========== BSC & STRATEGY ========== -->
+<div class="panel-section" id="panel-bsc">
+  <div class="section-title">Balanced Scorecard & Strategy Map</div>
+  <p class="section-sub">4 Perspectives driving strategic outcomes</p>
+
+  <div class="grid-4">
+    <div class="card bsc-card bsc-financial">
+      <div class="bsc-tag">Financial</div>
+      <div class="stat-value" style="font-size:20px">Revenue & Profit</div>
+      <p class="text-xs text-muted" style="margin-top:8px">ROI, Cash Flow, Financial Results — How we appear to shareholders</p>
+      <div style="margin-top:12px;font-size:12px;color:var(--gold)">Key Questions:</div>
+      <p class="text-xs text-muted">Improve cost structure, Increase asset utilization, Expand revenue, Enhance customer value</p>
+    </div>
+    <div class="card bsc-card bsc-customer">
+      <div class="bsc-tag">Customer</div>
+      <div class="stat-value" style="font-size:20px">Satisfaction & Loyalty</div>
+      <p class="text-xs text-muted" style="margin-top:8px">Satisfaction rate, Retention, Delivery & quality performance</p>
+      <div style="margin-top:12px;font-size:12px;color:var(--blue)">Attributes:</div>
+      <p class="text-xs text-muted">Price, Quality, Availability, Functionality, Service, Partnership, Brand</p>
+    </div>
+    <div class="card bsc-card bsc-internal">
+      <div class="bsc-tag">Internal Process</div>
+      <div class="stat-value" style="font-size:20px">Operations & Innovation</div>
+      <p class="text-xs text-muted" style="margin-top:8px">Activities per function, Process alignment & automation</p>
+      <div style="margin-top:12px;font-size:12px;color:var(--green)">Process Types:</div>
+      <p class="text-xs text-muted">Operations Mgmt, Customer Mgmt, Innovation, Regulatory & Social</p>
+    </div>
+    <div class="card bsc-card bsc-learning">
+      <div class="bsc-tag">Learning & Growth</div>
+      <div class="stat-value" style="font-size:20px">People & Technology</div>
+      <p class="text-xs text-muted" style="margin-top:8px">Job satisfaction, Turnover, Skills, Training opportunities</p>
+      <div style="margin-top:12px;font-size:12px;color:var(--purple)">Capital Types:</div>
+      <p class="text-xs text-muted">Human (Skills, Training), Information (Systems, DB), Organization (Culture, Leadership)</p>
+    </div>
+  </div>
+
+  <!-- Strategy Map Visual -->
+  <div class="card" style="margin-bottom:30px">
+    <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">STRATEGY MAP — GENERIC EXAMPLE</h3>
+    <div class="chart-wrap"><canvas id="strategyChart"></canvas></div>
+  </div>
+
+  <!-- Cascading Strategy -->
+  <div class="grid-3">
+    <div class="card" style="border-top:2px solid var(--red);text-align:center">
+      <div class="stat-label">Corporate Strategy</div>
+      <div class="stat-value" style="font-size:18px;color:var(--red)">Company Level</div>
+      <p class="text-xs text-muted" style="margin-top:6px">Scorecard Corporate → KPI Corporate</p>
+    </div>
+    <div class="card" style="border-top:2px solid var(--gold);text-align:center">
+      <div class="stat-label">Functional Strategy</div>
+      <div class="stat-value" style="font-size:18px;color:var(--gold)">Directorate / Area</div>
+      <p class="text-xs text-muted" style="margin-top:6px">Scorecard Functional → KPI Functional</p>
+    </div>
+    <div class="card" style="border-top:2px solid var(--green);text-align:center">
+      <div class="stat-label">Operational Strategy</div>
+      <div class="stat-value" style="font-size:18px;color:var(--green)">Dept / Branch</div>
+      <p class="text-xs text-muted" style="margin-top:6px">Scorecard Individual → KPI Individual</p>
+    </div>
+  </div>
+
+  <!-- BMC -->
+  <div class="divider"></div>
+  <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">BUSINESS MODEL CANVAS — 9 ELEMENTS</h3>
+  <div class="grid-3">
+    <div class="card"><div class="text-xs gold fw-600 mb-8">CUSTOMER SEGMENT</div><p class="text-sm text-muted">Who are your customers? Segments, needs, behaviors</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">VALUE PROPOSITION</div><p class="text-sm text-muted">What value do you deliver? Why customers choose you</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">CHANNELS</div><p class="text-sm text-muted">How you reach and deliver to customers</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">CUSTOMER RELATIONSHIPS</div><p class="text-sm text-muted">Type of relationship with each segment</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">REVENUE STREAMS</div><p class="text-sm text-muted">How the business generates income</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">KEY RESOURCES</div><p class="text-sm text-muted">Critical assets required to operate</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">KEY ACTIVITIES</div><p class="text-sm text-muted">Most important actions to execute</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">KEY PARTNERS</div><p class="text-sm text-muted">Network of suppliers and partners</p></div>
+    <div class="card"><div class="text-xs gold fw-600 mb-8">COST STRUCTURE</div><p class="text-sm text-muted">All costs incurred to operate the model</p></div>
+  </div>
+</div>
+
+<!-- ========== KPI FRAMEWORK ========== -->
+<div class="panel-section" id="panel-kpi">
+  <div class="section-title">KPI Framework</div>
+  <p class="section-sub">Key Performance Indicators — Target + Timeframe + Data Source + Frequency</p>
+
+  <!-- KPI Anatomy -->
+  <div class="grid-4">
+    <div class="card" style="text-align:center;border-top:2px solid var(--green)">
+      <div style="font-size:28px;margin-bottom:8px">🎯</div>
+      <div class="fw-600" style="font-size:14px;color:var(--green)">TARGET</div>
+      <p class="text-xs text-muted" style="margin-top:4px">Quantifiable goal</p>
+    </div>
+    <div class="card" style="text-align:center;border-top:2px solid var(--red)">
+      <div style="font-size:28px;margin-bottom:8px">⏰</div>
+      <div class="fw-600" style="font-size:14px;color:var(--red)">TIMEFRAME</div>
+      <p class="text-xs text-muted" style="margin-top:4px">Deadline for accomplishment</p>
+    </div>
+    <div class="card" style="text-align:center;border-top:2px solid var(--gold)">
+      <div style="font-size:28px;margin-bottom:8px">📂</div>
+      <div class="fw-600" style="font-size:14px;color:var(--gold)">DATA SOURCE</div>
+      <p class="text-xs text-muted" style="margin-top:4px">Where data comes from</p>
+    </div>
+    <div class="card" style="text-align:center;border-top:2px solid var(--blue)">
+      <div style="font-size:28px;margin-bottom:8px">📊</div>
+      <div class="fw-600" style="font-size:14px;color:var(--blue)">FREQUENCY</div>
+      <p class="text-xs text-muted" style="margin-top:4px">Reporting cadence</p>
+    </div>
+  </div>
+
+  <!-- Leading vs Lagging -->
+  <div class="grid-2">
+    <div class="card">
+      <h3 class="mb-16 fw-600" style="font-size:15px;color:var(--blue)">LEADING INDICATORS</h3>
+      <p class="text-sm text-muted mb-16">Predictive metrics for <strong style="color:var(--text)">future</strong> performance. Act as early warning signals.</p>
+      <div class="chart-wrap"><canvas id="leadLagChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 class="mb-16 fw-600" style="font-size:15px;color:var(--purple)">LAGGING INDICATORS</h3>
+      <p class="text-sm text-muted mb-16">Metrics measuring <strong style="color:var(--text)">past</strong> performance. Confirm outcomes.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Perspective</th><th>Objective</th><th>Lagging</th><th>Leading</th></tr></thead>
+          <tbody>
+            <tr><td>Financial</td><td>Build business</td><td>Revenue Growth</td><td>—</td></tr>
+            <tr><td>Customer</td><td>Develop loyalty</td><td>Customer Loyalty</td><td>Hours w/ customer, Solutions offered</td></tr>
+            <tr><td>Internal</td><td>Improve knowledge</td><td>Solution database additions</td><td>System downtime, Ease of use</td></tr>
+            <tr><td>Learning</td><td>Increase productivity</td><td>Competency attainment</td><td>Training results, PDP goals</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Good KPI Criteria -->
+  <div class="divider"></div>
+  <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">7 CRITERIA FOR GOOD KPIs</h3>
+  <div class="grid-2">
+    <div class="card">
+      <div class="criteria-item"><div class="criteria-num">1</div><div class="criteria-text"><h5>Kuantitatif</h5><p>Measurable in objective values — e.g., Cost Reduction 10%</p></div></div>
+      <div class="criteria-item"><div class="criteria-num">2</div><div class="criteria-text"><h5>Mudah Dipahami</h5><p>Shows at a glance what is measured — e.g., Defect Ratio</p></div></div>
+      <div class="criteria-item"><div class="criteria-num">3</div><div class="criteria-text"><h5>Mendorong Perilaku</h5><p>Drives desired behavior — e.g., # of rule violations</p></div></div>
+      <div class="criteria-item"><div class="criteria-num">4</div><div class="criteria-text"><h5>Visible</h5><p>Impact directly visible on results — e.g., Complaint resolution speed</p></div></div>
+    </div>
+    <div class="card">
+      <div class="criteria-item"><div class="criteria-num">5</div><div class="criteria-text"><h5>Komitmen Bersama</h5><p>Defined & agreed by all process participants — e.g., On-time delivery</p></div></div>
+      <div class="criteria-item"><div class="criteria-num">6</div><div class="criteria-text"><h5>Mengukur Yang Penting</h5><p>Only measure what matters for end results — e.g., Sales target calculations</p></div></div>
+      <div class="criteria-item"><div class="criteria-num">7</div><div class="criteria-text"><h5>Seimbang</h5><p>Balance between productivity, efficiency, and cost</p></div></div>
+      <div style="margin-top:16px;padding:14px;background:var(--gold-glow);border-radius:8px">
+        <p class="text-xs" style="color:var(--gold);font-weight:600">GOOD KPIs = Actionable + Measurable + Purposeful</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI vs OKR comparison -->
+  <div class="card" style="margin-top:20px">
+    <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">KPI vs OKR COMPARISON</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dimension</th><th>KPI</th><th>OKR</th></tr></thead>
+        <tbody>
+          <tr><td>What</td><td>Numbers tracking business operations</td><td>Action-oriented goals and measures</td></tr>
+          <tr><td>Foundation</td><td>Past results or future goals</td><td>Mission-based, aspirational, directional</td></tr>
+          <tr><td>Direction</td><td>Monitors steady-state & benchmarks</td><td>Audacious and bold, tied to mission</td></tr>
+          <tr><td>Triggers</td><td>Actions when numbers are off track</td><td>Actions taken as issues arise</td></tr>
+          <tr><td>Duration</td><td>Measured on an ongoing basis</td><td>Time-bound, often quarterly</td></tr>
+          <tr><td>Lifespan</td><td>May stay same quarter to quarter</td><td>Change from quarter to quarter</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- KPI Polarity -->
+  <div class="grid-2" style="margin-top:20px">
+    <div class="card">
+      <h3 class="mb-16 fw-600 gold" style="font-size:15px">KPI POLARITY & CALCULATION</h3>
+      <div style="display:flex;gap:16px;margin-bottom:16px">
+        <div style="flex:1;padding:14px;background:rgba(76,175,106,.08);border-radius:8px;text-align:center">
+          <div class="fw-600" style="color:var(--green);font-size:14px">KPI Max</div>
+          <div class="text-xs text-muted" style="margin-top:4px">Bigger is better</div>
+          <div class="mono text-xs" style="margin-top:8px;color:var(--text)">Achievement / Target</div>
+        </div>
+        <div style="flex:1;padding:14px;background:rgba(196,64,64,.08);border-radius:8px;text-align:center">
+          <div class="fw-600" style="color:var(--red);font-size:14px">KPI Min</div>
+          <div class="text-xs text-muted" style="margin-top:4px">Smaller is better</div>
+          <div class="mono text-xs" style="margin-top:8px;color:var(--text)">Target / Achievement</div>
+        </div>
+      </div>
+      <div class="text-xs text-muted">Other methods: Tiered KPI, Scale 1–5, Capping</div>
+    </div>
+    <div class="card">
+      <h3 class="mb-16 fw-600 gold" style="font-size:15px">KPI vs METRICS</h3>
+      <div class="chart-wrap"><canvas id="kpiMetricChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- KPI Bad vs Good examples -->
+  <div class="card" style="margin-top:20px">
+    <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">BAD KPI → GOOD KPI TRANSFORMATION</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Bad KPI (Vague)</th><th>Good KPI (Specific & Measurable)</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td style="color:var(--red)">Terselenggaranya training sales</td><td style="color:var(--green)">1 training sales per bulan dengan evaluasi tahap 1-3</td></tr>
+          <tr><td>2</td><td style="color:var(--red)">Revenue bulanan mengalami kenaikan</td><td style="color:var(--green)">Revenue bulanan sebesar Rp100 juta dari seluruh channel</td></tr>
+          <tr><td>3</td><td style="color:var(--red)">Karyawan membawa diri dengan profesionalisme</td><td style="color:var(--green)">Absensi 100%, Keterlambatan 0%, Dokumen 100%</td></tr>
+          <tr><td>4</td><td style="color:var(--red)">Hasil design bagus</td><td style="color:var(--green)">Revisi < 2x per project</td></tr>
+          <tr><td>5</td><td style="color:var(--red)">Tugas terselesaikan dengan baik</td><td style="color:var(--text-muted)">??? (Needs context-specific definition)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SOP ========== -->
+<div class="panel-section" id="panel-sop">
+  <div class="section-title">Standard Operating Procedures</div>
+  <p class="section-sub">Detailed steps to ensure KPIs are achieved — Consistency, Quality, Compliance</p>
+
+  <!-- SOP Benefits -->
+  <div class="grid-4">
+    <div class="card" style="text-align:center"><div style="font-size:24px;margin-bottom:8px">✅</div><div class="fw-600 text-sm gold">Best Practices</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:24px;margin-bottom:8px">⚡</div><div class="fw-600 text-sm gold">Efficiency & Consistency</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:24px;margin-bottom:8px">🔍</div><div class="fw-600 text-sm gold">Quality Assurance</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:24px;margin-bottom:8px">📚</div><div class="fw-600 text-sm gold">Knowledge Transfer</div></div>
+  </div>
+
+  <!-- 3 Formats -->
+  <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">SOP FORMATS</h3>
+  <div class="grid-3">
+    <div class="card sop-format">
+      <h4>Simple</h4>
+      <div class="use-case">Use Case</div>
+      <p class="text-xs text-muted mb-16">Straightforward, Small scope</p>
+      <ul>
+        <li>Statement of purpose</li>
+        <li>Summary or overview</li>
+        <li>Step-by-step instructions</li>
+        <li>3–5 sections</li>
+        <li>DRI (Directly Responsible Individual)</li>
+      </ul>
+    </div>
+    <div class="card sop-format" style="border:1px solid rgba(200,168,78,.2)">
+      <h4>Hierarchical</h4>
+      <div class="use-case">Use Case</div>
+      <p class="text-xs text-muted mb-16">Complex, Large scope</p>
+      <ul>
+        <li>Statement of purpose</li>
+        <li>Table of contents</li>
+        <li>Summary or overview</li>
+        <li>Detailed instructions</li>
+        <li>Multiple sections + Checklists</li>
+        <li>DRI</li>
+      </ul>
+    </div>
+    <div class="card sop-format">
+      <h4>Flowchart</h4>
+      <div class="use-case">Use Case</div>
+      <p class="text-xs text-muted mb-16">Simple or complex, Flexible scope</p>
+      <ul>
+        <li>Statement of purpose</li>
+        <li>Easy-to-follow flowchart</li>
+        <li>DRI</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SOP vs WI -->
+  <div class="card" style="margin-top:10px">
+    <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">SOP vs WORK INSTRUCTION</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dimension</th><th>SOP</th><th>Work Instruction</th></tr></thead>
+        <tbody>
+          <tr><td>Detail Level</td><td>Detailed & Specific</td><td>General Overview</td></tr>
+          <tr><td>Complexity</td><td>Complex & Technical</td><td>Routine & Repetitive</td></tr>
+          <tr><td>Flexibility</td><td>Followed Strictly</td><td>Flexible & Adaptable</td></tr>
+          <tr><td>Scope</td><td>How to perform a Process</td><td>How to perform a Task</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- When to create SOP -->
+  <div class="divider"></div>
+  <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">WHEN TO CREATE AN SOP</h3>
+  <div class="grid-3">
+    <div class="card"><div class="fw-600 text-sm mb-8" style="color:var(--red)"><span class="pulse pulse-red"></span>Critical Process</div><p class="text-xs text-muted">e.g., SOP Penggunaan Mesin</p></div>
+    <div class="card"><div class="fw-600 text-sm mb-8" style="color:var(--gold)"><span class="pulse pulse-gold"></span>High Variation Results</div><p class="text-xs text-muted">e.g., SOP Baking Roti</p></div>
+    <div class="card"><div class="fw-600 text-sm mb-8" style="color:var(--green)"><span class="pulse pulse-green"></span>Repetitive / Frequent Process</div><p class="text-xs text-muted">e.g., SOP Pengajuan Cuti</p></div>
+    <div class="card"><div class="fw-600 text-sm mb-8" style="color:var(--blue)"><span class="pulse pulse-green"></span>High Consistency Needed</div><p class="text-xs text-muted">e.g., SOP Membuat Telur ½ Matang</p></div>
+    <div class="card"><div class="fw-600 text-sm mb-8" style="color:var(--purple)"><span class="pulse pulse-gold"></span>Complex Process</div><p class="text-xs text-muted">e.g., SOP Pengukuran Karat Berlian</p></div>
+    <div class="card"><div class="fw-600 text-sm mb-8" style="color:var(--gold)"><span class="pulse pulse-gold"></span>Multi-Party Involvement</div><p class="text-xs text-muted">e.g., SOP Approval Biaya Dinas</p></div>
+  </div>
+</div>
+
+<!-- ========== INDUSTRY STRATEGY MAPS ========== -->
+<div class="panel-section" id="panel-examples">
+  <div class="section-title">Industry Strategy Map Examples</div>
+  <p class="section-sub">BSC Strategy Maps across different industries</p>
+
+  <!-- Salesman KPI Example -->
+  <div class="card" style="margin-bottom:30px">
+    <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">INDIVIDUAL KPI — SALESMAN EXAMPLE</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>BSC Perspective</th><th>Strategy</th><th>KPI</th><th>Type</th><th>How to Measure</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-max">Financial</span></td><td>Target Penjualan Tercapai</td><td>Volume Penjualan 100 juta/bulan</td><td><span class="badge badge-lag">Lagging</span></td><td>Omzet toko</td></tr>
+          <tr><td><span class="badge badge-max">Financial</span></td><td>Kontribusi pada target revenue</td><td>% kontribusi terhadap total</td><td><span class="badge badge-lag">Lagging</span></td><td>Revenue report</td></tr>
+          <tr><td><span class="badge badge-lead">Customer</span></td><td>Meningkatkan kepuasan pelanggan</td><td>Keluhan < 30/bulan</td><td><span class="badge badge-lag">Lagging</span></td><td>Complain via telp, medsos, ojol</td></tr>
+          <tr><td><span class="badge badge-lead">Customer</span></td><td>Meningkatkan loyalitas</td><td>30 membership baru/bulan</td><td><span class="badge badge-lead">Leading</span></td><td>Pelayanan di toko</td></tr>
+          <tr><td><span class="badge badge-min">Internal</span></td><td>Bekerja cepat dan efisien</td><td>SLA compliance > 95%</td><td><span class="badge badge-lead">Leading</span></td><td>Process monitoring</td></tr>
+          <tr><td><span class="badge badge-min">Internal</span></td><td>Tanggung jawab & kerajinan</td><td>Absensi 100%</td><td><span class="badge badge-lag">Lagging</span></td><td>Attendance system</td></tr>
+          <tr><td><span class="badge badge-lag">Learning</span></td><td>Ikut pelatihan produk</td><td>1 training/bulan + evaluasi</td><td><span class="badge badge-lead">Leading</span></td><td>Training records</td></tr>
+          <tr><td><span class="badge badge-lag">Learning</span></td><td>Ikut pelatihan penjualan</td><td>Score evaluasi > 80%</td><td><span class="badge badge-lead">Leading</span></td><td>Test results</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Industry Cards -->
+  <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">INDUSTRY-SPECIFIC STRATEGY MAPS</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4 class="fw-600 gold mb-16" style="font-size:14px">🏪 RETAIL</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Perspective</th><th>Strategic Objectives</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--gold)">Financial</td><td>Drive profitable growth, Grow same-store sales, Improve inventory turns</td></tr>
+            <tr><td style="color:var(--blue)">Customer</td><td>Meet needs & expectations, First preference for tech, Convenient shopping</td></tr>
+            <tr><td style="color:var(--green)">Internal</td><td>Map customer & market, Innovate channels, Improve marketing effectiveness</td></tr>
+            <tr><td style="color:var(--purple)">Learning</td><td>Performance-centric culture, Develop field staff, Improve IT</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h4 class="fw-600 gold mb-16" style="font-size:14px">📡 TELCO</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Perspective</th><th>Strategic Objectives</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--gold)">Financial</td><td>YoY profitable growth, Increase customer base, Dominate RMS</td></tr>
+            <tr><td style="color:var(--blue)">Customer</td><td>Meet needs, Excellent experience, Build trust, Priority service</td></tr>
+            <tr><td style="color:var(--green)">Internal</td><td>Enhance NPD, Develop roadmap, Optimize channels, Differentiated service</td></tr>
+            <tr><td style="color:var(--purple)">Learning</td><td>HR for customer orientation, Focus on training, Improve MIS/IT</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h4 class="fw-600 gold mb-16" style="font-size:14px">🏭 MANUFACTURING</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Perspective</th><th>Strategic Objectives</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--gold)">Financial</td><td>Grow profitable revenues, New customers, International expansion</td></tr>
+            <tr><td style="color:var(--blue)">Customer</td><td>Leading brand, Consistent quality, Loyal orders, Reputed designs</td></tr>
+            <tr><td style="color:var(--green)">Internal</td><td>Sales innovation, Improve processes, Utilization of plants, Delivery times</td></tr>
+            <tr><td style="color:var(--purple)">Learning</td><td>Enhance PMS, Variable pay, Retain talent, Leverage IT</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h4 class="fw-600 gold mb-16" style="font-size:14px">🏨 HOSPITALITY</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Perspective</th><th>Strategic Objectives</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--gold)">Financial</td><td>Grow revenue & profit, Increase per visit revenue, Improve efficiency</td></tr>
+            <tr><td style="color:var(--blue)">Customer</td><td>Reach new travelers, International standards, Value-for-money, Innovation</td></tr>
+            <tr><td style="color:var(--green)">Internal</td><td>Revenue management, High-quality service, Sales & marketing effectiveness</td></tr>
+            <tr><td style="color:var(--purple)">Learning</td><td>Close skill gaps, Performance management, Motivation & recognition</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Corporate Example -->
+  <div class="card" style="margin-top:20px">
+    <h3 class="mb-16 fw-600 gold" style="font-size:15px;letter-spacing:.5px">CORPORATE STRATEGY MAP — F&B FRANCHISE EXAMPLE</h3>
+    <div class="chart-wrap"><canvas id="corporateChart"></canvas></div>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel-section').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.panel).classList.add('active');
+  });
+});
+
+const gold='#c8a84e',goldLight='#e8d48b',goldDark='#8a6d2b',
+      red='#c44040',green='#4caf6a',blue='#4a7fc4',purple='#8a5cc4',
+      gridColor='rgba(200,168,78,0.06)',textMuted='#888580';
+
+Chart.defaults.color=textMuted;
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.font.size=11;
+
+// Barrier Chart
+new Chart(document.getElementById('barrierChart'),{
+  type:'bar',
+  data:{
+    labels:['Vision Barrier','People Barrier','Management Barrier','Resource Barrier'],
+    datasets:[{
+      label:'% Affected',
+      data:[95,75,85,60],
+      backgroundColor:[gold,blue,red,purple],
+      borderRadius:6,barThickness:36
+    }]
+  },
+  options:{
+    indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},
+      tooltip:{
+        backgroundColor:'#1a1a1a',borderColor:gold,borderWidth:1,
+        titleColor:goldLight,bodyColor:'#e8e4dc',
+        callbacks:{label:c=>c.raw+'% of organizations affected'}
+      }
+    },
+    scales:{
+      x:{grid:{color:gridColor},ticks:{callback:v=>v+'%'},max:100},
+      y:{grid:{display:false}}
+    }
+  }
+});
+
+// Lead/Lag Chart
+new Chart(document.getElementById('leadLagChart'),{
+  type:'doughnut',
+  data:{
+    labels:['Leading (Future)','Lagging (Past)'],
+    datasets:[{data:[55,45],backgroundColor:[blue,purple],borderWidth:0,spacing:4}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,cutout:'65%',
+    plugins:{legend:{position:'bottom',labels:{padding:16,usePointStyle:true,pointStyleWidth:10}}}
+  }
+});
+
+// Strategy Map Radar
+new Chart(document.getElementById('strategyChart'),{
+  type:'radar',
+  data:{
+    labels:['Increase Revenue','Maximize Shareholder Value','Brand Image','Customer Loyalty','Product Attribute','Product Development','Operation Mgmt','Employee Skills','Team Leadership','Technology'],
+    datasets:[{
+      label:'Strategic Priority',data:[90,85,70,80,75,65,70,60,55,50],
+      backgroundColor:'rgba(200,168,78,0.12)',borderColor:gold,borderWidth:2,
+      pointBackgroundColor:gold,pointRadius:4
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    scales:{r:{grid:{color:gridColor},angleLines:{color:gridColor},ticks:{display:false},suggestedMin:0,suggestedMax:100}},
+    plugins:{legend:{display:false}}
+  }
+});
+
+// KPI vs Metrics
+new Chart(document.getElementById('kpiMetricChart'),{
+  type:'bar',
+  data:{
+    labels:['Holistic View','Tied to Goals','Strategic Insight','Standalone Value'],
+    datasets:[
+      {label:'KPIs',data:[90,95,85,80],backgroundColor:gold,borderRadius:4,barThickness:18},
+      {label:'Metrics',data:[40,30,25,70],backgroundColor:'rgba(136,133,128,0.3)',borderRadius:4,barThickness:18}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyleWidth:10,padding:16}}},
+    scales:{
+      x:{grid:{display:false}},
+      y:{grid:{color:gridColor},ticks:{callback:v=>v+'%'},max:100}
+    }
+  }
+});
+
+// Corporate Strategy Chart
+new Chart(document.getElementById('corporateChart'),{
+  type:'bar',
+  data:{
+    labels:['Revenue Penjualan','Revenue Franchise','Harga Franchise','Pilihan Minuman #1','Tersedia Dimana-mana','Peluang Usaha','Inovasi Produk','Efisien Produksi','Buka Cabang','Karyawan Ahli','Customer Focus','Low Turnover'],
+    datasets:[{
+      label:'Strategic Priority Score',
+      data:[95,80,70,85,90,75,65,70,80,60,75,55],
+      backgroundColor:function(ctx){
+        const i=ctx.dataIndex;
+        if(i<3)return gold;
+        if(i<6)return blue;
+        if(i<9)return green;
+        return purple;
+      },
+      borderRadius:4,barThickness:20
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},
+      tooltip:{backgroundColor:'#1a1a1a',borderColor:gold,borderWidth:1,titleColor:goldLight,bodyColor:'#e8e4dc'}
+    },
+    scales:{
+      x:{grid:{display:false},ticks:{maxRotation:45,minRotation:45}},
+      y:{grid:{color:gridColor},max:100}
+    }
+  }
+});
+</script>
+</body>
+</html>
